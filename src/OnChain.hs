@@ -28,52 +28,32 @@
 module OnChain
   ( vUt
   ) where
---import           Cardano.Api.Shelley            (PlutusScriptV2)
---import           Codec.Serialise                (serialise)
---import           Ledger.Ada                     as Ada
 import           Plutus.Script.Utils.V2.Scripts as Utils
 import qualified Plutus.V1.Ledger.Value         as Value
 import           Plutus.V2.Ledger.Api           (Credential (PubKeyCredential, ScriptCredential),
                                                  CurrencySymbol, PubKeyHash,
                                                  TokenName, UnsafeFromData,
                                                  Value, unsafeFromBuiltinData)
---import qualified Plutus.V2.Ledger.Api           as PlutusV2
---import qualified PlutusTx
 import           PlutusTx.Prelude
 
 import           Types
 
-{-
-Was muss sichergestellt sein während der Registrierung?
- - NFT soll gelockt werden
- - NFT muss zu einem bestimmten CS gehören
- - der NFT muss von der Addresse des enOwner kommen
- - Das Datum soll enthalten:
-    - ENO Validator ID
-    - ConfigHash
-    - TokenName
-    - OwnerPubKeyHash
-
--}
 
 {-# INLINABLE validateRegister #-}
 validateRegister :: ScriptParams -> EnRegistration -> ATxInfo -> Bool
 validateRegister ScriptParams{..} EnRegistration{..} info
-    | isEnNftSend, txSignedBy' (atxInfoSignatories info) enOwner, isNftPaidByOwner = True
+    | isEnNftSend, isNftPaidByOwner, txSignedBy' (atxInfoSignatories info) enOwner = True
     | otherwise = False
     where
 
-        --isPaid :: PubKeyHash -> Integer -> Bool
-        --isPaid addr amt = Ada.fromValue (valuePaidTo' info addr) >= Ada.lovelaceOf amt
-
-        -- only exactly one EnNFT can be user for registration, the value has to be paid to the script
+        -- only exactly one EnNFT can be used for registration, the value has to be paid to the script
         isEnNftSend :: Bool
         isEnNftSend = Value.valueOf (valueLockedBy' info $ ownHash' $ atxInfoInputs info ) pNftCs enUsedNftTn == 1
 
-        -- der NFT muss von der Addresse des enOwner kommen
+        -- the NFT has to be sent by the owner specified in the datum
         isNftPaidByOwner :: Bool
-        isNftPaidByOwner = True
-        
+        isNftPaidByOwner = sendfromOwner (atxInfoOutputs info) enOwner pNftCs enUsedNftTn
+
 
 
 
@@ -83,9 +63,11 @@ validateUnregister ScriptParams{..} EnRegistration{..} info
     | txSignedBy' (atxInfoSignatories info) enOwner, isEnNftSpent, noOutputsToScript = True
     | otherwise = False
     where
+      -- is only the NFT specified in script params and datum spent back to the owner
       isEnNftSpent :: Bool
       isEnNftSpent = Value.valueOf (valuePaidTo' info enOwner ) pNftCs enUsedNftTn == 1
 
+      -- no ouput is sent to the script address
       noOutputsToScript :: Bool
       noOutputsToScript =
           let scriptValues :: [Value]
@@ -99,33 +81,26 @@ validateUnregister ScriptParams{..} EnRegistration{..} info
 {-# INLINABLE validateAdmin #-}
 validateAdmin :: ScriptParams -> ATxInfo -> Bool
 validateAdmin ScriptParams{..} info
+    -- is signed by admin wallet
     | txSignedBy' (atxInfoSignatories info) adm = True
     | otherwise = False
 
---{-# INLINABLE minAda' #-}
---minAda' :: Integer
---minAda' = 1000000
 
---{-# INLINABLE cf #-}
---cf :: Integer -> Integer -> Integer
---cf i j = PlutusTx.Prelude.max minAda' (i `PlutusTx.Prelude.divide` 1000 * j)
+{-# INLINABLE isOwnerAddr #-}
+isOwnerAddr :: AAddress -> PubKeyHash -> Bool
+isOwnerAddr AAddress { aaddressCredential } pkh = case aaddressCredential of
+  PubKeyCredential c -> c == pkh
+  _                  -> False
 
---{-# INLINABLE isScriptAddress #-}
---isScriptAddress :: AAddress -> Bool
---isScriptAddress AAddress { aaddressCredential } = case aaddressCredential of
---  ScriptCredential _ -> True
---  _                  -> False
-
---{-# INLINABLE scriptOutputsOk #-}
---scriptOutputsOk :: [ATxOut] -> CurrencySymbol -> TokenName -> Bool
---scriptOutputsOk i c t =
---  let
---    isScriptOutput :: ATxOut -> Bool
---    isScriptOutput = isScriptAddress . atxOutAddress
-
---  in case filter isScriptOutput i of
---    [ATxOut{atxOutValue=v}] -> Value.valueOf v c t >= 1
---    _                       ->  False
+{-# INLINABLE sendfromOwner #-}
+sendfromOwner :: [ATxOut] -> PubKeyHash -> CurrencySymbol -> TokenName -> Bool
+sendfromOwner i h c t =
+  let
+    isfromOwner :: ATxOut -> Bool
+    isfromOwner a = isOwnerAddr (atxOutAddress a) h
+  in case filter isfromOwner i of
+    [ATxOut{atxOutValue=v}] -> Value.valueOf v c t == 1
+    _                       ->  False
 
 {-# INLINABLE txSignedBy' #-}
 txSignedBy' :: [PubKeyHash] -> PubKeyHash -> Bool
@@ -151,8 +126,6 @@ valueLockedBy' info h =
     in mconcat outputs
 
 {-# INLINABLE scriptOutputsAt' #-}
--- | Get the list of 'TxOut' outputs of the pending transaction at
---   a given script address.
 scriptOutputsAt' :: ValidatorHash -> ATxInfo -> [Value]
 scriptOutputsAt' h p =
     let flt ATxOut{atxOutAddress=AAddress (ScriptCredential s) _, atxOutValue} | s == h = Just atxOutValue
@@ -161,7 +134,6 @@ scriptOutputsAt' h p =
 
 
 {-# INLINABLE ownHash' #-}
--- | Get the validator hash of the output that is curently being validated
 ownHash' :: [ATxInInfo] -> ValidatorHash
 ownHash' l =
   let
@@ -170,8 +142,7 @@ ownHash' l =
     checkInput _ = False
   in case filter checkInput l of
     [ATxInInfo{atxInInfoResolved=ATxOut{atxOutAddress=AAddress (ScriptCredential s) _}}] -> s
-    _                          -> traceError "Lg" -- "Can't get validator hashes"
---ownHash' _ = traceError "Lg" -- "Can't get validator hashes"
+    _                          -> error ()
 
 {-# INLINABLE mkVal #-}
 mkVal :: ScriptParams -> EnRegistration -> Action -> AScriptContext -> Bool

@@ -37,7 +37,6 @@ library
                     , plutus-tx
                     , plutus-script-utils
                     , playground-common
-                    , utf8-string
                     , serialise
 
   if !(impl(ghcjs) || os(ghcjs))
@@ -68,6 +67,6 @@ executable en-registration
                      , cardano-ledger-alonzo
                      , text
                      , serialise
-                      , utf8-string
+                     , utf8-string
                      , wm-earthnode-registration
                      
