@@ -1,2 +1,7 @@
 # earthnode-registration-smart-contract
 Earth Node Registration Smart Contract
+
+## Generate a contract instance
+cabal run en-registration  14696a4676909f4e3cb1f2e60e2e08e5abed70caf5c02699be971139 addr_test1qqgagc0fy6nm0qe4h8zqxsg952tqjeg7l7j0agd0cx4u25zcer3t74yn0dm8xqnr7rtwhkqcrpsmphwcf0mlmn39ry6qxvept2 2
+
+## Setup Plutus Environment

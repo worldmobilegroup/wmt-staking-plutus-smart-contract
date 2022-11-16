@@ -63,6 +63,7 @@ executable en-registration
                      , plutus-script-utils
                      , playground-common
                      , plutus-contract
+                     , plutus-chain-index-core
                      , cardano-ledger-shelley
                      , cardano-ledger-alonzo
                      , text

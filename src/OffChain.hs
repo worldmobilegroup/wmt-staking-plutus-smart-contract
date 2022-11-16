@@ -32,17 +32,17 @@ validator sp = PlutusV2.mkValidatorScript
         ($$(PlutusTx.compile [|| vUt ||])
         `PlutusTx.applyCode` PlutusTx.liftCode sp)
 
-escrowScript :: BuiltinData -> PlutusV2.Script
-escrowScript = PlutusV2.unValidatorScript . validator
+script :: BuiltinData -> PlutusV2.Script
+script = PlutusV2.unValidatorScript . validator
 
-escrowHash :: BuiltinData -> PlutusV2.ValidatorHash
-escrowHash = Utils.validatorHash . validator
+scriptHash :: BuiltinData -> PlutusV2.ValidatorHash
+scriptHash = Utils.validatorHash . validator
 
-escrowAddress :: ScriptParams -> Ledger.Address
-escrowAddress sp = Address.scriptHashAddress $ escrowHash $ PlutusTx.toBuiltinData sp
+scriptAddress :: ScriptParams -> Ledger.Address
+scriptAddress sp = Address.scriptHashAddress $ scriptHash $ PlutusTx.toBuiltinData sp
 
 scriptAsCbor :: BuiltinData -> LB.ByteString
-scriptAsCbor = serialise . escrowScript
+scriptAsCbor = serialise . script
 
 apiScript :: ScriptParams -> PlutusScript PlutusScriptV2
 apiScript sp = PlutusScriptSerialised $ SBS.toShort $ LB.toStrict $ scriptAsCbor (PlutusTx.toBuiltinData sp)

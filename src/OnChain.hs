@@ -54,9 +54,6 @@ validateRegister ScriptParams{..} EnRegistration{..} info
         isNftPaidByOwner :: Bool
         isNftPaidByOwner = sendfromOwner (atxInfoOutputs info) enOwner pNftCs enUsedNftTn
 
-
-
-
 {-# INLINABLE validateUnregister #-}
 validateUnregister :: ScriptParams -> EnRegistration -> ATxInfo -> Bool
 validateUnregister ScriptParams{..} EnRegistration{..} info
@@ -76,7 +73,6 @@ validateUnregister ScriptParams{..} EnRegistration{..} info
             case scriptValues of
               [] -> True
               _  -> False
-
 
 {-# INLINABLE validateAdmin #-}
 validateAdmin :: ScriptParams -> ATxInfo -> Bool
