@@ -63,7 +63,7 @@ main = do
         case scriptResult of
             Left err -> print $ displayError err
             Right () -> Prelude.putStrLn $ "{\"plutus_file\":" ++ show scriptFile ++ ",\"script_address\":" ++ show address' ++ "}"
-      _ -> error "You need to provide a curency symbol and an admin address!"
+      _ -> error "You need to provide a curency symbol, an admin address, an the networkmagic (0 == mainnet)!"
 
 -- read and decode bech32 Cardano address
 parseShelleyAddr :: String -> Either Bech32DecodeError (Cardano.Api.Shelley.Address ShelleyAddr)

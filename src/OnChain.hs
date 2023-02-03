@@ -34,6 +34,7 @@ import           Plutus.V2.Ledger.Api           (Credential (PubKeyCredential, S
                                                  CurrencySymbol, PubKeyHash,
                                                  TokenName, UnsafeFromData,
                                                  Value, unsafeFromBuiltinData)
+import           Plutus.V2.Ledger.Contexts      as V2
 import           PlutusTx.Prelude
 
 import           Types
@@ -42,22 +43,25 @@ import           Types
 {-# INLINABLE validateRegister #-}
 validateRegister :: ScriptParams -> EnRegistration -> ATxInfo -> Bool
 validateRegister ScriptParams{..} EnRegistration{..} info
-    | isEnNftSend, isNftPaidByOwner, txSignedBy' (atxInfoSignatories info) enOwner = True
+    | nftIsSpentToScript, datumUnchanged, checkAyaPoolId = True
     | otherwise = False
     where
+        nftIsSpentToScript :: Bool
+        nftIsSpentToScript = Value.valueOf (valueLockedBy' info $ ownHash' $ atxInfoReferenceInputs info ) pNftCs enUsedNftTn == 1
 
-        -- only exactly one EnNFT can be used for registration, the value has to be paid to the script
-        isEnNftSend :: Bool
-        isEnNftSend = Value.valueOf (valueLockedBy' info $ ownHash' $ atxInfoInputs info ) pNftCs enUsedNftTn == 1
+        datumUnchanged :: Bool
+        datumUnchanged = True
 
-        -- the NFT has to be sent by the owner specified in the datum
-        isNftPaidByOwner :: Bool
-        isNftPaidByOwner = sendfromOwner (atxInfoOutputs info) enOwner pNftCs enUsedNftTn
+        checkAyaPoolId :: Bool
+        checkAyaPoolId = True
+
+
+
 
 {-# INLINABLE validateUnregister #-}
 validateUnregister :: ScriptParams -> EnRegistration -> ATxInfo -> Bool
 validateUnregister ScriptParams{..} EnRegistration{..} info
-    | txSignedBy' (atxInfoSignatories info) enOwner, isEnNftSpent, noOutputsToScript = True
+    | txSignedBy' (atxInfoSignatories info) enOwner, noOutputsToScript, isEnNftSpent = True
     | otherwise = False
     where
       -- is only the NFT specified in script params and datum spent back to the owner
@@ -68,7 +72,7 @@ validateUnregister ScriptParams{..} EnRegistration{..} info
       noOutputsToScript :: Bool
       noOutputsToScript =
           let scriptValues :: [Value]
-              scriptValues = scriptOutputsAt' (ownHash' $ atxInfoInputs info) info
+              scriptValues = scriptOutputsAt' (ownHash' $ atxInfoReferenceInputs info) info
           in
             case scriptValues of
               [] -> True
@@ -82,21 +86,21 @@ validateAdmin ScriptParams{..} info
     | otherwise = False
 
 
-{-# INLINABLE isOwnerAddr #-}
-isOwnerAddr :: AAddress -> PubKeyHash -> Bool
-isOwnerAddr AAddress { aaddressCredential } pkh = case aaddressCredential of
-  PubKeyCredential c -> c == pkh
-  _                  -> False
+--{-# INLINABLE isOwnerAddr #-}
+--isOwnerAddr :: AAddress -> PubKeyHash -> Bool
+--isOwnerAddr AAddress { aaddressCredential } pkh = case aaddressCredential of
+--  PubKeyCredential c -> c == pkh
+--  _                  -> False
 
-{-# INLINABLE sendfromOwner #-}
-sendfromOwner :: [ATxOut] -> PubKeyHash -> CurrencySymbol -> TokenName -> Bool
-sendfromOwner i h c t =
-  let
-    isfromOwner :: ATxOut -> Bool
-    isfromOwner a = isOwnerAddr (atxOutAddress a) h
-  in case filter isfromOwner i of
-    [ATxOut{atxOutValue=v}] -> Value.valueOf v c t == 1
-    _                       ->  False
+--{-# INLINABLE sendfromOwner #-}
+--sendfromOwner :: [ATxOut] -> PubKeyHash -> CurrencySymbol -> TokenName -> Bool
+--sendfromOwner i h c t =
+--  let
+--    isfromOwner :: ATxOut -> Bool
+--    isfromOwner a = isOwnerAddr (atxOutAddress a) h
+--  in case filter isfromOwner i of
+--    [ATxOut{atxOutValue=v}] -> Value.valueOf v c t == 1
+--    _                       ->  False
 
 {-# INLINABLE txSignedBy' #-}
 txSignedBy' :: [PubKeyHash] -> PubKeyHash -> Bool
@@ -138,7 +142,7 @@ ownHash' l =
     checkInput _ = False
   in case filter checkInput l of
     [ATxInInfo{atxInInfoResolved=ATxOut{atxOutAddress=AAddress (ScriptCredential s) _}}] -> s
-    _                          -> error ()
+    _                          -> traceError "ownHash"
 
 {-# INLINABLE mkVal #-}
 mkVal :: ScriptParams -> EnRegistration -> Action -> AScriptContext -> Bool

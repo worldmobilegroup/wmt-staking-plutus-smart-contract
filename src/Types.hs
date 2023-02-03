@@ -27,7 +27,7 @@ module Types where
 import           Data.Aeson           (FromJSON, ToJSON)
 import           Ledger
 import           Playground.Contract  (Generic)
-import           Plutus.V2.Ledger.Api (Credential)
+import           Plutus.V2.Ledger.Api (Credential, Map)
 import qualified PlutusTx
 import           PlutusTx.Prelude
 import qualified Prelude
@@ -63,11 +63,15 @@ data AAddress = AAddress
   }
 PlutusTx.makeIsDataIndexed ''AAddress [('AAddress,0)]
 
+data AOutputDatum = NoOutputDatum | OutputDatumHash DatumHash | OutputDatum Datum
+PlutusTx.makeIsDataIndexed ''AOutputDatum [('NoOutputDatum,0),('OutputDatumHash,1),('OutputDatum,2)]
+
 data ATxOut = ATxOut
   {
-      atxOutAddress   :: AAddress
-    , atxOutValue     :: Value
-    , atxOutDatumHash :: BuiltinData
+      atxOutAddress         :: AAddress
+    , atxOutValue           :: Value
+    , atxOutDatumHash       :: AOutputDatum
+    , atxOutReferenceScript :: Maybe ScriptHash
   }
 PlutusTx.makeIsDataIndexed ''ATxOut [('ATxOut,0)]
 
@@ -80,16 +84,18 @@ data ATxInInfo = ATxInInfo
 PlutusTx.makeIsDataIndexed ''ATxInInfo [('ATxInInfo,0)]
 
 data ATxInfo = ATxInfo {
-      atxInfoInputs      :: [ATxInInfo]
-    , atxInfoOutputs     :: [ATxOut]
-    , atxInfoFee         :: BuiltinData
-    , atxInfoMint        :: BuiltinData
-    , atxInfoDCert       :: BuiltinData
-    , atxInfoWdrl        :: BuiltinData
-    , atxInfoValidRange  :: BuiltinData
-    , atxInfoSignatories :: [PubKeyHash]
-    , atxInfoData        :: BuiltinData
-    , atxInfoId          :: BuiltinData
+      atxInfoInputs          :: [ATxInInfo]
+    , atxInfoReferenceInputs :: [ATxInInfo]
+    , atxInfoOutputs         :: [ATxOut]
+    , atxInfoFee             :: BuiltinData
+    , atxInfoMint            :: BuiltinData
+    , atxInfoDCert           :: BuiltinData
+    , atxInfoWdrl            :: BuiltinData
+    , atxInfoValidRange      :: BuiltinData
+    , atxInfoSignatories     :: [PubKeyHash]
+    , atxInfoRedeemers       :: Map BuiltinData BuiltinData
+    , atxInfoData            :: BuiltinData
+    , atxInfoId              :: BuiltinData
 }
 PlutusTx.makeIsDataIndexed ''ATxInfo [('ATxInfo,0)]
 
