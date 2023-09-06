@@ -28,127 +28,96 @@
 module OnChain
   ( vUt
   ) where
-import           Plutus.Script.Utils.V2.Scripts as Utils
-import qualified Plutus.V1.Ledger.Value         as Value
-import           Plutus.V2.Ledger.Api           (Credential (PubKeyCredential, ScriptCredential),
-                                                 CurrencySymbol, PubKeyHash,
-                                                 TokenName, UnsafeFromData,
-                                                 Value, unsafeFromBuiltinData)
-import           Plutus.V2.Ledger.Contexts      as V2
+-- import           Plutus.Script.Utils.V2.Scripts as Utils
+import qualified Plutus.V1.Ledger.Value    as Value
+--import           Plutus.V2.Ledger.Api           ( --, Credential (PubKeyCredential,ScriptCredential),
+--                                                 PubKeyHash, UnsafeFromData,
+--                                                 Value, unsafeFromBuiltinData)
+import           Plutus.V2.Ledger.Contexts as V2 ()
 import           PlutusTx.Prelude
+
+import           Plutus.V2.Ledger.Api
 
 import           Types
 
 
-{-# INLINABLE validateRegister #-}
-validateRegister :: ScriptParams -> EnRegistration -> ATxInfo -> Bool
-validateRegister ScriptParams{..} EnRegistration{..} info
-    | nftIsSpentToScript, datumUnchanged, checkAyaPoolId = True
-    | otherwise = False
-    where
-        nftIsSpentToScript :: Bool
-        nftIsSpentToScript = Value.valueOf (valueLockedBy' info $ ownHash' $ atxInfoReferenceInputs info ) pNftCs enUsedNftTn == 1
-
-        datumUnchanged :: Bool
-        datumUnchanged = True
-
-        checkAyaPoolId :: Bool
-        checkAyaPoolId = True
-
-
-
-
 {-# INLINABLE validateUnregister #-}
-validateUnregister :: ScriptParams -> EnRegistration -> ATxInfo -> Bool
+validateUnregister :: ScriptParams -> EnRegistration -> TxInfo -> Bool
 validateUnregister ScriptParams{..} EnRegistration{..} info
-    | txSignedBy' (atxInfoSignatories info) enOwner, noOutputsToScript, isEnNftSpent = True
+    | txSignedBy' (txInfoSignatories info) enOwner, noScriptOutputs $ txInfoOutputs info = True
     | otherwise = False
     where
-      -- is only the NFT specified in script params and datum spent back to the owner
+      -- In the valuePaidTo original version is an error still needs investiagtion, at the moment the is NFT paid constraint
+      -- is deactivated on testnet but the owner signature on no ScriptOutputs are used.
       isEnNftSpent :: Bool
       isEnNftSpent = Value.valueOf (valuePaidTo' info enOwner ) pNftCs enUsedNftTn == 1
 
-      -- no ouput is sent to the script address
-      noOutputsToScript :: Bool
-      noOutputsToScript =
-          let scriptValues :: [Value]
-              scriptValues = scriptOutputsAt' (ownHash' $ atxInfoReferenceInputs info) info
-          in
-            case scriptValues of
-              [] -> True
-              _  -> False
-
 {-# INLINABLE validateAdmin #-}
-validateAdmin :: ScriptParams -> ATxInfo -> Bool
+validateAdmin :: ScriptParams -> TxInfo -> Bool
 validateAdmin ScriptParams{..} info
-    -- is signed by admin wallet
-    | txSignedBy' (atxInfoSignatories info) adm = True
+    | txSignedBy' (txInfoSignatories info) adm = True
     | otherwise = False
 
 
---{-# INLINABLE isOwnerAddr #-}
---isOwnerAddr :: AAddress -> PubKeyHash -> Bool
---isOwnerAddr AAddress { aaddressCredential } pkh = case aaddressCredential of
---  PubKeyCredential c -> c == pkh
---  _                  -> False
-
---{-# INLINABLE sendfromOwner #-}
---sendfromOwner :: [ATxOut] -> PubKeyHash -> CurrencySymbol -> TokenName -> Bool
---sendfromOwner i h c t =
---  let
---    isfromOwner :: ATxOut -> Bool
---    isfromOwner a = isOwnerAddr (atxOutAddress a) h
---  in case filter isfromOwner i of
---    [ATxOut{atxOutValue=v}] -> Value.valueOf v c t == 1
---    _                       ->  False
-
 {-# INLINABLE txSignedBy' #-}
 txSignedBy' :: [PubKeyHash] -> PubKeyHash -> Bool
-txSignedBy' atxInfoSignatories k =
-  isJust $ find (k == ) atxInfoSignatories
+txSignedBy' txInfoSignatories k =
+  isJust $ find (k == ) txInfoSignatories
 
 {-# INLINABLE pubKeyOutputsAt' #-}
-pubKeyOutputsAt' :: PubKeyHash -> ATxInfo -> [Value]
+pubKeyOutputsAt' :: PubKeyHash -> TxInfo -> [Value]
 pubKeyOutputsAt' pk p =
-    let flt ATxOut{ atxOutAddress = AAddress (PubKeyCredential pk') _, atxOutValue } | pk == pk' = Just atxOutValue
+    let flt TxOut{ txOutAddress = Address (PubKeyCredential pk') _, txOutValue } | pk == pk' = Just txOutValue
                                                                                      | otherwise = Nothing
         flt _                     = Nothing
-    in mapMaybe flt (atxInfoOutputs p)
+    in mapMaybe flt (txInfoOutputs p)
 
 {-# INLINABLE valuePaidTo' #-}
-valuePaidTo' :: ATxInfo -> PubKeyHash -> Value
+valuePaidTo' :: TxInfo -> PubKeyHash -> Value
 valuePaidTo' info pkh = mconcat (pubKeyOutputsAt' pkh info)
 
-{-# INLINABLE valueLockedBy' #-}
-valueLockedBy' :: ATxInfo -> ValidatorHash -> Value
-valueLockedBy' info h =
-    let outputs = scriptOutputsAt' h info
-    in mconcat outputs
+--{-# INLINABLE valueLockedBy' #-}
+--valueLockedBy' :: ATxInfo -> ValidatorHash -> Value
+--valueLockedBy' info h =
+--    let outputs = scriptOutputsAt' h info
+--    in mconcat outputs
 
-{-# INLINABLE scriptOutputsAt' #-}
-scriptOutputsAt' :: ValidatorHash -> ATxInfo -> [Value]
-scriptOutputsAt' h p =
-    let flt ATxOut{atxOutAddress=AAddress (ScriptCredential s) _, atxOutValue} | s == h = Just atxOutValue
-        flt _ = Nothing
-    in mapMaybe flt (atxInfoOutputs p)
+--{-# INLINABLE scriptOutputsAt' #-}
+--scriptOutputsAt' :: ValidatorHash -> ATxInfo -> [Value]
+--scriptOutputsAt' h p =
+--    let flt ATxOut{atxOutAddress=AAddress (ScriptCredential s) _, atxOutValue} | s == h = Just atxOutValue
+--        flt _ = Nothing
+--    in mapMaybe flt (atxInfoOutputs p)
 
 
-{-# INLINABLE ownHash' #-}
-ownHash' :: [ATxInInfo] -> ValidatorHash
-ownHash' l =
+--{-# INLINABLE ownHash' #-}
+--ownHash' :: [ATxInInfo] -> ValidatorHash
+--ownHash' l =
+--  let
+--    checkInput :: ATxInInfo -> Bool
+--    checkInput ATxInInfo{atxInInfoResolved=ATxOut{atxOutAddress=AAddress (ScriptCredential _) _}} = True
+--    checkInput _ = False
+--  in case filter checkInput l of
+--     [ATxInInfo{atxInInfoResolved=ATxOut{atxOutAddress=AAddress (ScriptCredential s) _}}] -> s
+--     _                          -> error () --traceError "ownHash"
+
+{-# INLINABLE noScriptOutputs #-}
+noScriptOutputs :: [TxOut] -> Bool
+noScriptOutputs [] = True
+noScriptOutputs (h:t) =
   let
-    checkInput :: ATxInInfo -> Bool
-    checkInput ATxInInfo{atxInInfoResolved=ATxOut{atxOutAddress=AAddress (ScriptCredential _) _}} = True
-    checkInput _ = False
-  in case filter checkInput l of
-    [ATxInInfo{atxInInfoResolved=ATxOut{atxOutAddress=AAddress (ScriptCredential s) _}}] -> s
-    _                          -> traceError "ownHash"
+    checkInput :: TxOut -> Bool
+    checkInput TxOut{txOutAddress=Address (ScriptCredential _) _} = False
+    checkInput _                                                  = True
+  in
+    checkInput h && noScriptOutputs t
 
 {-# INLINABLE mkVal #-}
-mkVal :: ScriptParams -> EnRegistration -> Action -> AScriptContext -> Bool
-mkVal sp d Register   ctx = validateRegister   sp d $ aScriptContextTxInfo ctx
-mkVal sp d Unregister ctx = validateUnregister sp d $ aScriptContextTxInfo ctx
-mkVal sp _ Admin      ctx = validateAdmin      sp $ aScriptContextTxInfo ctx
+mkVal :: ScriptParams -> EnRegistration -> Action -> ScriptContext -> Bool
+--mkVal sp d Register   ctx = validateRegister   sp d $ aScriptContextTxInfo ctx
+mkVal sp d Unregister ctx = validateUnregister sp d $ scriptContextTxInfo ctx
+mkVal sp _ Admin      ctx = validateAdmin      sp $ scriptContextTxInfo ctx
+mkVal _ _ _ _             = False
 
 {-# INLINABLE vUt #-}
 vUt :: BuiltinData -> BuiltinData -> BuiltinData -> BuiltinData -> ()

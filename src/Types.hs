@@ -27,9 +27,10 @@ module Types where
 import           Data.Aeson           (FromJSON, ToJSON)
 import           Ledger
 import           Playground.Contract  (Generic)
-import           Plutus.V2.Ledger.Api (Credential, Map)
+--import           Plutus.V2.Ledger.Api (Map) --Credential
+import           Plutus.V2.Ledger.Api
 import qualified PlutusTx
-import           PlutusTx.Prelude
+import           PlutusTx.Prelude     ()
 import qualified Prelude
 
 data ScriptParams = ScriptParams
@@ -42,11 +43,12 @@ PlutusTx.makeLift ''ScriptParams
 
 data EnRegistration = EnRegistration
         {
-              enConfigHash :: BuiltinByteString
-            , enPoolID     :: BuiltinByteString
-            , enPoolTicker :: BuiltinByteString
-            , enUsedNftTn  :: TokenName
-            , enOwner      :: PubKeyHash
+              enOperatorAddress :: BuiltinByteString
+            , enConsensusPubKey :: BuiltinByteString
+            , enMerkleTreeRoot  :: BuiltinByteString
+            , enCceAddress      :: BuiltinByteString
+            , enUsedNftTn       :: TokenName
+            , enOwner           :: PubKeyHash
         } deriving (Prelude.Show, Generic, FromJSON, ToJSON, Prelude.Eq, Prelude.Ord)
 PlutusTx.makeIsDataIndexed ''EnRegistration [('EnRegistration, 0)]
 PlutusTx.makeLift ''EnRegistration
@@ -56,24 +58,28 @@ data Action = Register | Unregister | Admin
 PlutusTx.makeIsDataIndexed ''Action [('Register, 0),('Unregister, 1),('Admin, 2)]
 PlutusTx.makeLift ''Action
 
+{-
 data AAddress = AAddress
   {
       aaddressCredential        :: Credential
     , aaddressStakingCredential :: BuiltinData
   }
 PlutusTx.makeIsDataIndexed ''AAddress [('AAddress,0)]
+PlutusTx.makeLift ''AAddress
 
 data AOutputDatum = NoOutputDatum | OutputDatumHash DatumHash | OutputDatum Datum
-PlutusTx.makeIsDataIndexed ''AOutputDatum [('NoOutputDatum,0),('OutputDatumHash,1),('OutputDatum,2)]
+PlutusTx.makeIsDataIndexed ''AOutputDatum [('NoOutputDatum,0), ('OutputDatumHash,1), ('OutputDatum,2)]
+PlutusTx.makeLift ''AOutputDatum
 
 data ATxOut = ATxOut
   {
       atxOutAddress         :: AAddress
     , atxOutValue           :: Value
     , atxOutDatumHash       :: AOutputDatum
-    , atxOutReferenceScript :: Maybe ScriptHash
+    , atxOutReferenceScript :: BuiltinData
   }
 PlutusTx.makeIsDataIndexed ''ATxOut [('ATxOut,0)]
+PlutusTx.makeLift ''ATxOut
 
 data ATxInInfo = ATxInInfo
   {
@@ -82,10 +88,11 @@ data ATxInInfo = ATxInInfo
 
   }
 PlutusTx.makeIsDataIndexed ''ATxInInfo [('ATxInInfo,0)]
+PlutusTx.makeLift ''ATxInInfo
 
 data ATxInfo = ATxInfo {
-      atxInfoInputs          :: [ATxInInfo]
-    , atxInfoReferenceInputs :: [ATxInInfo]
+      atxInfoInputs          :: [ATxInInfo] --ATxInInfo
+    , atxInfoReferenceInputs :: [ATxInInfo] --ATxInInfo
     , atxInfoOutputs         :: [ATxOut]
     , atxInfoFee             :: BuiltinData
     , atxInfoMint            :: BuiltinData
@@ -93,14 +100,17 @@ data ATxInfo = ATxInfo {
     , atxInfoWdrl            :: BuiltinData
     , atxInfoValidRange      :: BuiltinData
     , atxInfoSignatories     :: [PubKeyHash]
-    , atxInfoRedeemers       :: Map BuiltinData BuiltinData
-    , atxInfoData            :: BuiltinData
+    , atxInfoRedeemers       :: BuiltinData
+    , atxInfoData            :: Map DatumHash Datum
     , atxInfoId              :: BuiltinData
 }
 PlutusTx.makeIsDataIndexed ''ATxInfo [('ATxInfo,0)]
+PlutusTx.makeLift ''ATxInfo
 
 data AScriptContext = AScriptContext
   { aScriptContextTxInfo :: ATxInfo
   , scriptContextPurpose :: BuiltinData
   }
 PlutusTx.makeIsDataIndexed ''AScriptContext [('AScriptContext,0)]
+PlutusTx.makeLift ''AScriptContext
+-}
