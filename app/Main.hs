@@ -1,7 +1,7 @@
 {-
   Author   : Torben Poguntke
   Company  : World Mobile Group
-  Copyright: 2022
+  Copyright: 2023
   Version  : v0.1
 -}
 {-# LANGUAGE DataKinds             #-}
@@ -25,45 +25,67 @@
 
 import           Cardano.Api
 import           Cardano.Api.Shelley          (Address (ShelleyAddress))
-import           Cardano.Ledger.Alonzo.TxInfo (transKeyHash)
-import           Cardano.Ledger.Shelley.API   (Credential (KeyHashObj))
+import           Cardano.Ledger.Alonzo.TxInfo (transKeyHash,transScriptHash)
+import           Cardano.Ledger.Shelley.API   (Credential (KeyHashObj,ScriptHashObj))
 import           Data.ByteString.UTF8         (fromString)
 import           Data.Text
 import           Ledger
-import           OffChain
 import           Plutus.Contract.CardanoAPI   (toCardanoAddressInEra)
-import           Plutus.V1.Ledger.Value       (currencySymbol)
+import           Plutus.V1.Ledger.Value       (currencySymbol,tokenName,assetClass)
+import qualified PlutusTx
 import           Prelude
 import           System.Environment           (getArgs)
-import           Types
+import           Val.OffChain               as ValOffChain
+import           Val.Types                  as ValTypes
+import           Pol.OffChain               as PolOffChain
+import           Pol.Types                  as PolTypes
 
 main :: IO ()
 main = do
     args <- getArgs
     case args of
 
-      [cs',adm',magic'] -> do
+      [nftcs',stcs',sttn',vh_reg',adm',magic'] -> do
         let
-            scriptFile   = "en-nft-registration-test_060923.plutus"
-            pkh          = addrToPkh $ either (\_ -> error "Not a valid address") id (parseShelleyAddr adm') -- "addr_test1qqgagc0fy6nm0qe4h8zqxsg952tqjeg7l7j0agd0cx4u25zcer3t74yn0dm8xqnr7rtwhkqcrpsmphwcf0mlmn39ry6qxvept2"
-            cs = currencySymbol $ fromString cs' -- "14696a4676909f4e3cb1f2e60e2e08e5abed70caf5c02699be971139"
-            params          = ScriptParams
+            validatorFile   = "wmt_staking_dummy.plutus"
+            policyFile = "wmt-staking-proof-of-execution_dummy.plutus"
+            vh_reg          = addrToVh $ either (\_ -> error "Not a valid validator address") id (parseShelleyAddr vh_reg')
+            pkh          = addrToPkh $ either (\_ -> error "Not a valid address") id (parseShelleyAddr adm')
+            nftcs = currencySymbol $ fromString nftcs'
+            stcs = currencySymbol $ fromString stcs'
+            sttn = tokenName $ fromString sttn'
+            validatorParams          = ValTypes.ScriptParams
                 {
-                    pNftCs       = cs  -- CurrencySymbol / PolicyID of ENNFT
-                  , adm          = pkh -- Admin wallet address
+                    pNftCs       = nftcs
+                  , pRegContract = vh_reg
+                  , pStCs        = stcs
+                  , pStTn        = sttn
+                  , pAdm         = pkh
                 }
             magic = case read magic' :: Integer of        -- 1..n: (Testnet (NetworkMagic n)) || 0: Mainnet
               0 -> Mainnet
               x -> Testnet (NetworkMagic $ fromInteger x)
-            address     = scriptAddress params
+            address     = scriptAddress validatorParams
             address'    = case toCardanoAddressInEra magic address of
                             Left err    -> error $ "cannot create bech32 contract address: " ++ show err
                             Right addr' -> serialiseAddress addr'
-        scriptResult <- writeFileTextEnvelope scriptFile Nothing $ apiScript params
-        case scriptResult of
+            vh_st       = ValOffChain.scriptHash $ PlutusTx.toBuiltinData validatorParams
+            policyParams          = PolTypes.ScriptParams
+                {
+                    spNftCs            = nftcs
+                  , spWMT              = assetClass stcs sttn
+                  , spRegContr         = vh_reg
+                  , spWmtStakingContr  = vh_st
+                }
+        valResult <- writeFileTextEnvelope validatorFile Nothing $ ValOffChain.apiScript validatorParams
+        polResult <- writeFileTextEnvelope policyFile Nothing $ PolOffChain.apiScript policyParams
+
+        case valResult of
             Left err -> print $ displayError err
-            Right () -> Prelude.putStrLn $ "{\"plutus_file\":" ++ show scriptFile ++ ",\"script_address\":" ++ show address' ++ "}"
-      _ -> error "You need to provide a curency symbol, an admin address, an the networkmagic (0 == mainnet)!"
+            Right () -> case polResult of
+              Left err -> print $ displayError err
+              Right () -> Prelude.putStrLn $ "{\"plutus_file_policy\":" ++ show policyFile ++ ",\"plutus_file_validator\":" ++ show validatorFile ++ ",\"validator_address\":" ++ show address' ++ "}"
+      _ -> error "You need to provide a NFT curency symbol, a staking token CurrencySymbol, a staking token TokenName, the Script Address of the registration contract, the admin wallet address and the networkmagic (0 == mainnet)!"
 
 -- read and decode bech32 Cardano address
 parseShelleyAddr :: String -> Either Bech32DecodeError (Cardano.Api.Shelley.Address ShelleyAddr)
@@ -73,3 +95,8 @@ parseShelleyAddr s = deserialiseFromBech32 AsShelleyAddress $ Data.Text.pack s
 addrToPkh :: Cardano.Api.Shelley.Address ShelleyAddr -> PubKeyHash
 addrToPkh (ShelleyAddress _ (KeyHashObj kh) _) = transKeyHash kh
 addrToPkh _                                    = error "addrToPkh"
+
+-- get VH from bech32 address
+addrToVh :: Cardano.Api.Shelley.Address ShelleyAddr -> ValidatorHash
+addrToVh (ShelleyAddress _ (ScriptHashObj kh) _) = transScriptHash kh
+addrToVh _                                    = error "addrToVh"
