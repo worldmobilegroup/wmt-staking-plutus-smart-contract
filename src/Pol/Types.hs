@@ -49,7 +49,7 @@ PlutusTx.makeLift ''EnRegistration
 data ScriptParams = ScriptParams
         {
               spNftCs            :: CurrencySymbol
-            , spWMT              :: AssetClass
+            , spWMT              :: AssetClass 
             , spRegContr         :: ValidatorHash
             , spWmtStakingContr  :: ValidatorHash
         } deriving (Prelude.Show, Generic, FromJSON, ToJSON, Prelude.Eq, Prelude.Ord)

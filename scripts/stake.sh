@@ -1,17 +1,17 @@
 #!/bin/bash
 
 CS="b090c134738121e6c96dd9eedc3f7a99e6ac9d21985c1b97cba72077"
-TN="29c0a547d3213cad3d27e70927d21e8596c4bbf4a2eb2f501387ff8c4eb61d2c"
+TN="b9df48c3f4614337d7c67fc4ecd81e404cc75b89ef348a92e6d34f02a70b242e"
 
-TX_IN1="29c0a547d3213cad3d27e70927d21e8596c4bbf4a2eb2f501387ff8c4eb61d2c#1"
+TX_IN1="b9df48c3f4614337d7c67fc4ecd81e404cc75b89ef348a92e6d34f02a70b242e#0"
 RO_REF="837736493d53e82fc506de9272d9bc7af4035b49996ff81b6e2c6921b2a5f184#0"
 
 STAKING_CONTRACT_ADDRESS="addr_test1wqkax9glhwhss8e5x3dvfcgy9m3hy26yr6srwxkct0755mgd3xcr6"
 STAKING_TOKEN="3f1d9bd2f8c3d7d8144b789433261370eaf25cdc83fe8a745ef880c1.744452415341"
 
 CHANGE_ADDRESS="addr_test1qqt86eq9972q3qttj6ztje97llasktzfzvhmdccqjlqjaq2cer3t74yn0dm8xqnr7rtwhkqcrpsmphwcf0mlmn39ry6qy6q5t2"
-CHANGE="4800000 + 4985 3f1d9bd2f8c3d7d8144b789433261370eaf25cdc83fe8a745ef880c1.744452415341"
-COLLATERAL_UTXO="f36a1e2f7b7aba56451e18766179ab68062c28e0155071c9fbf78034c7fd9ad1#1"
+CHANGE="5375960 + 4985 3f1d9bd2f8c3d7d8144b789433261370eaf25cdc83fe8a745ef880c1.744452415341"
+COLLATERAL_UTXO="33e8497eca83e1efbe3c1383da7ead3961fcdb3bd631c70efe6fb80b189d9e4d#0"
 REQ_PKH="167d64052f9408816b9684b964befffb0b2c49132fb6e30097c12e81"
 
 # Build Staking Transaction
@@ -50,8 +50,12 @@ cardano-cli transaction build-raw \
 --out-file "./stake_unsigned_build_raw.tx"
 
 
-# First successful with this data: 
-# 2415443a19cc065bb82d52dcbd8e207ed0ed685bc198f3f8a9b2e58db92f2d12
+# Smart Contract Generation Output
+# {"plutus_file_policy":"wmt-staking-proof-of-execution_dummy.plutus","currencysymbol":"b090c134738121e6c96dd9eedc3f7a99e6ac9d21985c1b97cba72077","plutus_file_validator":"wmt_staking_dummy.plutus","validator_address":"addr_test1wqkax9glhwhss8e5x3dvfcgy9m3hy26yr6srwxkct0755mgd3xcr6"}
+# PubKeyHash: 167d64052f9408816b9684b964befffb0b2c49132fb6e30097c12e81 
+# Bytes nftcs: d8bebcb0abd89193874c59ed3023f5b4f81b89b6676d187ad7fbdb0e
+# Bytes stcs: 3f1d9bd2f8c3d7d8144b789433261370eaf25cdc83fe8a745ef880c1
+# Der PubKeyHash belongs to my address: addr_test1qqt86eq9972q3qttj6ztje97llasktzfzvhmdccqjlqjaq2cer3t74yn0dm8xqnr7rtwhkqcrpsmphwcf0mlmn39ry6qy6q5t2
 
 
 # Get UtxO's

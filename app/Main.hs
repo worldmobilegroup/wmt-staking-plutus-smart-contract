@@ -104,7 +104,7 @@ main = do
             Left err -> print $ displayError err
             Right () -> case polResult of
               Left err -> print $ displayError err
-              Right () -> Prelude.putStrLn $ "{\"plutus_file_policy\":" ++ show policyFile ++ ",\"currencysymbol\":\"" ++ show ocs ++ "\",\"plutus_file_validator\":" ++ show validatorFile ++ ",\"validator_address\":" ++ show address' ++ "}" ++ "\nPubKeyHash" ++ show pkh_print ++ "\n" ++ "Bytes nftcs: " ++ show nftcs ++"\n" ++ "Bytes stcs: " ++ show stcs
+              Right () -> Prelude.putStrLn $ "{\"plutus_file_policy\":" ++ show policyFile ++ ",\"currencysymbol\":\"" ++ show ocs ++ "\",\"plutus_file_validator\":" ++ show validatorFile ++ ",\"validator_address\":" ++ show address' ++ "}" ++ "\nPubKeyHash: " ++ show pkh_print ++ "\n" ++ "Bytes nftcs: " ++ show nftcs ++"\n" ++ "Bytes stcs: " ++ show stcs
       _ -> error "You need to provide a NFT curency symbol, a staking token CurrencySymbol, a staking token TokenName, the Script Address of the registration contract, the admin wallet address and the networkmagic (0 == mainnet)!"
 
 -- read and decode bech32 Cardano address
