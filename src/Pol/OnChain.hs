@@ -66,7 +66,6 @@ getExecutionProofTN ocs tn ScriptParams{..} info =
     v = txOutFromWmtSC (txInfoInputs info) spWMT spWmtStakingContr 
   in
     Value.valueOf v ocs tn == 1
-    --TokenName $ consByteString (txOutRefIdx orf) (appendByteString (getTxId $ txOutRefId orf) "#" ) 
 
 -- We determine the TxOutRef of the input from the wmt staking smart contract, we also know it must have at least 1 WMT in the UTxO to be valid
 {-# INLINABLE txOutFromWmtSC #-}
