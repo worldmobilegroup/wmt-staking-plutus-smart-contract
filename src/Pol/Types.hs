@@ -13,6 +13,7 @@
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TemplateHaskell       #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# options_ghc -Wno-redundant-constraints #-}
 {-# options_ghc -fno-specialise            #-}
 {-# OPTIONS_GHC -fno-strictness               #-}
@@ -26,11 +27,12 @@ module Pol.Types where
 
 import           Data.Aeson           (FromJSON, ToJSON)
 import           Ledger
-import           Playground.Contract  (Generic)
+import           GHC.Generics         (Generic)
 import           Plutus.V2.Ledger.Api
+import           Plutus.V1.Ledger.Value
 import qualified PlutusTx
 import           PlutusTx.Prelude     
-import qualified Prelude
+import qualified Prelude              
 
 data EnRegistration = EnRegistration
         {
@@ -54,9 +56,7 @@ data ScriptParams = ScriptParams
 PlutusTx.unstableMakeIsData ''ScriptParams
 PlutusTx.makeLift ''ScriptParams
 
-type StakeAmount = Integer
-
-data Action = Stake(StakeAmount) | UnStake
+data Action = Stake Integer TokenName Integer | UnStake TokenName 
     deriving (Prelude.Show, Generic, FromJSON, ToJSON, Prelude.Eq, Prelude.Ord)
 PlutusTx.makeIsDataIndexed ''Action [('Stake, 0),('UnStake, 1)]
 PlutusTx.makeLift ''Action

@@ -26,24 +26,11 @@ module Val.Types where
 
 import           Data.Aeson           (FromJSON, ToJSON)
 import           Ledger
-import           Playground.Contract  (Generic)
+import GHC.Generics (Generic)
 import           Plutus.V2.Ledger.Api
 import qualified PlutusTx
 import           PlutusTx.Prelude     ()
 import qualified Prelude
-
-data EnRegistration = EnRegistration
-        {
-              enOperatorAddress :: BuiltinByteString
-            , enConsensusPubKey :: BuiltinByteString
-            , enMerkleTreeRoot  :: BuiltinByteString
-            , enCceAddress      :: BuiltinByteString
-            , enUsedNftTn       :: TokenName
-            , enOwner           :: PubKeyHash
-        } deriving (Prelude.Show, Generic, FromJSON, ToJSON, Prelude.Eq, Prelude.Ord)
-PlutusTx.makeIsDataIndexed ''EnRegistration [('EnRegistration, 0)]
-PlutusTx.makeLift ''EnRegistration
-
 
 data ScriptParams = ScriptParams
         {

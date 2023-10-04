@@ -30,6 +30,8 @@ library
                     Val.Types
                     Val.OnChain
                     Val.OffChain
+                    --Sim.OffChain
+                    --Sim.Trace
   build-depends:     
                       aeson
                     , base -any
@@ -39,8 +41,9 @@ library
                     , plutus-ledger-api
                     , plutus-tx
                     , plutus-script-utils
-                    , playground-common
                     , serialise
+                    , containers
+                    , text
 
   if !(impl(ghcjs) || os(ghcjs))
         build-depends: plutus-tx-plugin -any
@@ -64,13 +67,12 @@ executable wmt-staking
                      , plutus-ledger
                      , plutus-ledger-api 
                      , plutus-script-utils
-                     , playground-common
-                     , plutus-contract
                      , plutus-chain-index-core
                      , cardano-ledger-shelley
                      , cardano-ledger-alonzo
                      , text
                      , serialise
                      , utf8-string
+                     , word8
                      , wmt-staking-lib
                      

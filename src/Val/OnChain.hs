@@ -31,7 +31,7 @@ module Val.OnChain
 -- import           Plutus.Script.Utils.V2.Scripts as Utils
 import qualified Plutus.V1.Ledger.Value    as Value (flattenValue,valueOf)
 import           Plutus.V2.Ledger.Contexts as V2 (findOwnInput,getContinuingOutputs)
-import           PlutusTx.Prelude               
+import           PlutusTx.Prelude          
 import           Plutus.V2.Ledger.Api
 
 import           Val.Types
@@ -52,11 +52,13 @@ validateAdmin ScriptParams{..} ctx
 {-# INLINABLE validateUnstaking #-}
 validateUnstaking :: ScriptParams -> WmtStaking -> ScriptContext -> Bool
 validateUnstaking sp d@WmtStaking{..} ctx
-    | txSignedBy' (txInfoSignatories info) swmtOwner, noScriptOutputs ctx, proofOfExecutionBurnt sExPrCs sExprTn $ txInfoMint info, onlyWMTandProofTokenOnUTxO sp d ctx = True
+    |   traceIfFalse "owner signature missing" $ txSignedBy' (txInfoSignatories info) swmtOwner
+      , traceIfFalse "script output" $ noScriptOutputs ctx
+      , traceIfFalse "execution proof error" $ proofOfExecutionBurnt sExPrCs sExprTn $ txInfoMint info
+      , traceIfFalse "wrong tokens" $ onlyWMTandProofTokenOnUTxO sp d ctx = True
     | otherwise = False
     where
       info = scriptContextTxInfo ctx
-
 
 -- Wir haben hier ein Problem, wir können die Minting Policy nicht kreuz-verdrahten mit diesem Smart Contract 
 -- (CurrencySymbol der Policy als Parameter hier und ValidatorHash als Parameter in der Minting Policy)
@@ -89,20 +91,8 @@ onlyWMTandProofTokenOnUTxO :: ScriptParams -> WmtStaking -> ScriptContext -> Boo
 onlyWMTandProofTokenOnUTxO ScriptParams{..} WmtStaking{..} ctx = 
   let 
     v = onlyOneScriptUTxO ctx
-    filterAda :: (CurrencySymbol, TokenName, Integer) -> Bool
-    filterAda (adaSymbol',adaToken', _ ) 
-      | adaSymbol' == adaSymbol && adaToken' == adaToken = False
-      | otherwise = True
-    v' = filter filterAda $ Value.flattenValue v
-    filterWmt :: (CurrencySymbol, TokenName, Integer) -> Bool
-    filterWmt (pStCs',pStTn',_) 
-      | pStCs' == pStCs && pStTn' == pStTn = False
-      | otherwise = True
-    v'' = filter filterWmt v'
   in 
-    case v'' of
-      [(cs',tn',amt)] -> cs' == sExPrCs && tn' == sExprTn && amt == 1
-      _ -> traceError "More tokens than Ada, Wmt and the ExecutionProof on UtxO, contact WM support" 
+    traceIfFalse "cannot find execution proof NFT" ((Value.valueOf v sExPrCs sExprTn) == 1) && traceIfFalse "no WMT on staking UTxO" ((Value.valueOf v pStCs pStTn) >= 1)
 
 -- custom tx signed by
 {-# INLINABLE txSignedBy' #-}
