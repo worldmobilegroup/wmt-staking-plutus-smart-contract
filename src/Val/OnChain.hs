@@ -9,7 +9,6 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE NoImplicitPrelude     #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE RankNTypes            #-}
@@ -29,9 +28,9 @@ module Val.OnChain
   ( vUt
   ) where
 -- import           Plutus.Script.Utils.V2.Scripts as Utils
-import qualified Plutus.V1.Ledger.Value    as Value (flattenValue,valueOf)
+import qualified Plutus.V1.Ledger.Value    as Value (valueOf)
 import           Plutus.V2.Ledger.Contexts as V2 (findOwnInput,getContinuingOutputs)
-import           PlutusTx.Prelude          
+import           PlutusTx.Prelude
 import           Plutus.V2.Ledger.Api
 
 import           Val.Types
@@ -66,7 +65,7 @@ validateUnstaking sp d@WmtStaking{..} ctx
 -- Da wir das CurrencySymbol nicht als parameter ablegen können, bleibt uns nur es im Datum zu speichern. 
 -- Das heißt der im Datum gepseicherte Token muss zerstört werden um "unstaken" zu können. 
 -- Dies erzwingt nicht das der richtige Token zerstört wird, jemand kann einen anderen Token zum staking im staking UTxO verwenden und diesen im Datum angeben,
--- Der Token hat aber die falsche policyID und der Tokenname muss nach dem richtigen Muster gebut worden sein. 
+-- Der Token hat aber die falsche policyID und der Tokenname muss nach dem richtigen Muster gebaut worden sein. 
 -- Für die Rewardberechnung werden aber nur Tokens mit einem bestimmten CurrencySymbol berücksichtigt, daher würde ein solch falsches UTxO nicht zur
 -- Reward berechnung herangezogen werden. 
 -- Eine Schwierigkeit ergibt sich dennoch: Es muss sichergestellt sein das falls zwei Tokens auf dem UTxO liegen das richtige Token zerstört wird oder das 
@@ -79,20 +78,20 @@ proofOfExecutionBurnt cs tn v = Value.valueOf v cs tn == -1
 -- Wir müssen sicherstellen das nur ein einziges ScriptUTxO in der transaction vorhanden ist.
 {-# INLINABLE onlyOneScriptUTxO #-}
 onlyOneScriptUTxO :: ScriptContext -> Value
-onlyOneScriptUTxO ctx = 
-    case findOwnInput ctx of 
+onlyOneScriptUTxO ctx =
+    case findOwnInput ctx of
       Just i -> txOutValue $ txInInfoResolved i
-      Nothing -> traceError "No Script Inputs detected" 
+      Nothing -> traceError "No Script Inputs detected"
 
 
 -- Wir müssen sicherstellen das auf dem ScriptUTxO nur WMT und ein weiter Token (der Execution Proof Token) in der Menge 1 vorhanden ist.
 {-# INLINABLE onlyWMTandProofTokenOnUTxO #-}
 onlyWMTandProofTokenOnUTxO :: ScriptParams -> WmtStaking -> ScriptContext -> Bool
-onlyWMTandProofTokenOnUTxO ScriptParams{..} WmtStaking{..} ctx = 
-  let 
+onlyWMTandProofTokenOnUTxO ScriptParams{..} WmtStaking{..} ctx =
+  let
     v = onlyOneScriptUTxO ctx
-  in 
-    traceIfFalse "cannot find execution proof NFT" ((Value.valueOf v sExPrCs sExprTn) == 1) && traceIfFalse "no WMT on staking UTxO" ((Value.valueOf v pStCs pStTn) >= 1)
+  in
+    traceIfFalse "cannot find execution proof NFT" (Value.valueOf v sExPrCs sExprTn == 1) && traceIfFalse "no WMT on staking UTxO" (Value.valueOf v pStCs pStTn >= 1)
 
 -- custom tx signed by
 {-# INLINABLE txSignedBy' #-}
@@ -103,10 +102,10 @@ txSignedBy' txInfoSignatories k =
 -- make sure no UTxOs are paid to this smart contract address
 {-# INLINABLE noScriptOutputs #-}
 noScriptOutputs :: ScriptContext -> Bool
-noScriptOutputs ctx = 
+noScriptOutputs ctx =
     case getContinuingOutputs ctx of
       [] -> True
-      _  -> traceError "Continuing output is not allowed" 
+      _  -> traceError "Continuing output is not allowed"
 
 
 -- Main Validator

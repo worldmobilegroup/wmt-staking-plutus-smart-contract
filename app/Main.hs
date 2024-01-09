@@ -58,19 +58,22 @@ main = do
     args <- getArgs
     case args of
 
-      [nftcs',stcs',sttn',vh_reg',adm',magic'] -> do
+      [sttn',vh_reg',adm',magic'] -> do
         let
-            validatorFile   = "wmt_staking_dummy.plutus"
-            policyFile = "wmt-staking-proof-of-execution_dummy.plutus"
+            validatorFile   = "wmt_staking_tArk.plutus"
+            policyFile = "wmt-staking-proof-of-execution_tArk.plutus"
             vh_reg          = addrToVh $ either (\_ -> error "Not a valid validator address") id (parseShelleyAddr vh_reg')
             pkh          = addrToPkh $ either (\_ -> error "Not a valid address") id (parseShelleyAddr adm')
             pkh_print    = addrToPkh $ either (\_ -> error "Not a valid address") id (parseShelleyAddr "addr_test1qqt86eq9972q3qttj6ztje97llasktzfzvhmdccqjlqjaq2cer3t74yn0dm8xqnr7rtwhkqcrpsmphwcf0mlmn39ry6qy6q5t2")
-            nftcs = currencySymbol $ BS.pack ([216,190,188,176,171,216,145,147,135,76,89,237,48,35,245,180,248,27,137,182,103,109,24,122,215,251,219,14::W8.Word8])
-            --currencySymbol$ BSU.fromString nftcs'
-            -- CurrencySymbol $ getLedgerBytes $ fromBytes $ BS.pack ([216,190,188,176,171,216,145,147,135,76,89,237,48,35,245,180,248,27,137,182,103,109,24,122,215,251,219,224::W8.Word8])
-            -- ([64,38,62,65,62,63,62,30,61,62,64,38,39,31,39,33,38,37,34,63,35,39,65,64,33,30,32,33,66,35,62,34,66,38,31,62,38,39,62,36,36,37,36,64,31,38,37,61,64,37,66,62,64,62,30,65::W8.Word8]) 
-            --BS.pack $ BS.unpack $ BSU.fromString nftcs' --currencySymbol$ fromString nftcs' --
-            stcs = currencySymbol $ BS.pack ([63,29,155,210,248,195,215,216,20,75,120,148,51,38,19,112,234,242,92,220,131,254,138,116,94,248,128,193::W8.Word8])
+            nftcs = currencySymbol $ BS.pack ([76,90,198,115,147,118,132,156,145,125,41,154,78,243,199,75,68,207,177,160,235,212,148,136,119,5,133,89::W8.Word8])
+            -- PublicTestnet ENNFT
+            -- ([216,190,188,176,171,216,145,147,135,76,89,237,48,35,245,180,248,27,137,182,103,109,24,122,215,251,219,14::W8.Word8])
+            stcs = currencySymbol $ BS.pack ([223,209,138,129,90,37,51,151,119,220,200,11,206,156,67,138,214,50,39,45,149,243,52,161,17,113,26,201::W8.Word8])
+            -- tArk:
+            -- ([223,209,138,129,90,37,51,151,119,220,200,11,206,156,67,138,214,50,39,45,149,243,52,161,17,113,26,201])
+
+            -- Testnet Staking Token
+            -- ([63,29,155,210,248,195,215,216,20,75,120,148,51,38,19,112,234,242,92,220,131,254,138,116,94,248,128,193::W8.Word8])
             sttn = tokenName $ BSU.fromString sttn'
             validatorParams          = ValTypes.ScriptParams
                 {

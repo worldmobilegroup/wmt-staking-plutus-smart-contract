@@ -30,14 +30,14 @@ module Pol.OnChain
   ) where
 import qualified Plutus.V1.Ledger.Value    as Value (valueOf,unAssetClass,AssetClass)
 import           Plutus.V2.Ledger.Contexts as V2 ()
-import           PlutusTx.Prelude           
-import           Plutus.V2.Ledger.Api             
+import           PlutusTx.Prelude
+import           Plutus.V2.Ledger.Api
 import           Plutus.V2.Ledger.Contexts
 import           Val.Types                hiding (ScriptParams,Action)
 import           Pol.Types
 
 
--- Checks ony if the proof of execution is burnt, the rest is checked by the wmt-staking smart contract
+-- Checks only if the proof of execution is burnt, the rest is checked by the wmt-staking smart contract
 -- We check that the CurrencySymbol of the token is the one of this minting policy
 {-# INLINABLE validateUnstaking #-}
 validateUnstaking :: ScriptParams -> CurrencySymbol -> TokenName -> TxInfo -> ScriptPurpose -> Bool
@@ -52,33 +52,33 @@ validateUnstaking _ _ _ _ _ = False
 {-# INLINABLE proofOfExecutionBurnt #-}
 proofOfExecutionBurnt :: CurrencySymbol -> TokenName -> Value -> Bool
 proofOfExecutionBurnt cs tn v =
-  let 
+  let
     burn_amt = Value.valueOf v cs tn
-  in 
+  in
     burn_amt == -1
 
 -- We need to determine the token programmatically, for that we reconstruct the tokenname from
 -- the input UTxO which is spent from the wmt staking smart contract and shall contain this token
 {-# INLINABLE getExecutionProofTN #-}
 getExecutionProofTN :: CurrencySymbol -> TokenName -> ScriptParams -> TxInfo -> Bool
-getExecutionProofTN ocs tn ScriptParams{..} info =  
+getExecutionProofTN ocs tn ScriptParams{..} info =
   let
-    v = txOutFromWmtSC (txInfoInputs info) spWMT spWmtStakingContr 
+    v = txOutFromWmtSC (txInfoInputs info) spWMT spWmtStakingContr
   in
     Value.valueOf v ocs tn == 1
 
 -- We determine the TxOutRef of the input from the wmt staking smart contract, we also know it must have at least 1 WMT in the UTxO to be valid
 {-# INLINABLE txOutFromWmtSC #-}
 txOutFromWmtSC :: [TxInInfo] -> Value.AssetClass -> ValidatorHash -> Value
-txOutFromWmtSC is a vh = 
-  let 
+txOutFromWmtSC is a vh =
+  let
     filter' :: Value.AssetClass -> TxInInfo -> [TxOut]
-    filter' ac i | (Value.valueOf (txOutValue o) wmt_cs wmt_tn) > 1 && b == ScriptCredential vh = [o]
+    filter' ac i | Value.valueOf (txOutValue o) wmt_cs wmt_tn > 1 && b == ScriptCredential vh = [o]
                      | otherwise = []
-                     where 
+                     where
                       (wmt_cs, wmt_tn) = Value.unAssetClass ac
                       o = txInInfoResolved i
-                      b = addressCredential $ txOutAddress o 
+                      b = addressCredential $ txOutAddress o
 
     os [] = []
     os (x:xs) = filter' a x ++ os xs
@@ -86,7 +86,7 @@ txOutFromWmtSC is a vh =
     case os is of
       [h] -> txOutValue h
       _ -> traceError "more than one script input or none"
-      
+
 
 {-- Validate Staking --}
 -- Validates that the proof of execution is minted only if the staking conditions are met
@@ -106,13 +106,13 @@ validateStaking sp ocs samt tn idx info
 -- Script Parameter -> MintingPolicy Currency Symbol (own) -> TxInfo -> Wmt Staking Script Hash -> Redeemer stake amount -> Bool
 {-# INLINABLE valuePaidToScript #-}
 valuePaidToScript :: ScriptParams -> CurrencySymbol -> TokenName -> TxInfo -> Integer -> Bool
-valuePaidToScript sp@ScriptParams{..} ocs tn info samt = 
-  let 
+valuePaidToScript sp@ScriptParams{..} ocs tn info samt =
+  let
     (cs',tn') = Value.unAssetClass spWMT
-    so = scriptOutputsAt spWmtStakingContr info 
+    so = scriptOutputsAt spWmtStakingContr info
     (d,v) = case so of
       [] -> traceError "could not find staking validator outputs"
-      [((OutputDatum (Datum od)),va)] -> trace "va" (od,va)
+      [(OutputDatum (Datum od),va)] -> trace "va" (od,va)
       _ -> traceError "more than one staking validator output"
     vp = valueProduced info
     lep = Value.valueOf vp ocs tn == Value.valueOf v ocs tn
@@ -127,20 +127,20 @@ valuePaidToScript sp@ScriptParams{..} ocs tn info samt =
 -- Check staking datum
 {-# INLINABLE isStakingDatum #-}
 isStakingDatum :: CurrencySymbol -> TokenName -> BuiltinData -> BuiltinData -> TxInfo -> Bool
-isStakingDatum ocs tn d ed info = 
-  let 
+isStakingDatum ocs tn d ed info =
+  let
     stakingDat :: WmtStaking -> EnRegistration -> Bool
-    stakingDat WmtStaking{..} EnRegistration{..} =     (traceIfFalse "Wrong sExprTn" $ (sExprTn == tn)) 
-                                                      && (traceIfFalse "Wrong sExPrCs" $ (sExPrCs == ocs))
-                                                      && (traceIfFalse "Wrong swmtENNFT" $ (swmtENNFT == enUsedNftTn))
-                                                      && (traceIfFalse "Wrong signature" $ (txSignedBy info swmtOwner))
+    stakingDat WmtStaking{..} EnRegistration{..} =     traceIfFalse "Wrong sExprTn" (sExprTn == tn)
+                                                      && traceIfFalse "Wrong sExPrCs" (sExPrCs == ocs)
+                                                      && traceIfFalse "Wrong swmtENNFT" (swmtENNFT == enUsedNftTn)
+                                                      && traceIfFalse "Wrong signature" (txSignedBy info swmtOwner)
   in
     stakingDat (unsafeFromBuiltinData d) $ unsafeFromBuiltinData ed
 
 -- We check that the tokenname is equal to an input UTxO txid+index and that this input is spent to make sure the tokenname is unique
 {-# INLINABLE checkTnUTxOSpent #-}
 checkTnUTxOSpent :: TokenName -> Integer -> TxInfo -> Bool
-checkTnUTxOSpent tn i info = 
+checkTnUTxOSpent tn i info =
   let
     txid = TxId $ unTokenName tn
   in
@@ -150,11 +150,11 @@ checkTnUTxOSpent tn i info =
 -- We also ensure that the Datum is formated correctly and is a RegistrationDatum
 {-# INLINABLE checkEarthNode #-}
 checkEarthNode :: ScriptParams -> TxInfo -> BuiltinData
-checkEarthNode sp info = 
+checkEarthNode sp info =
   let
     os = getRegistrationReferenceInputs sp $ map txInInfoResolved $ txInfoReferenceInputs info
   in
-    case os of 
+    case os of
       [d] -> d
       _ -> traceError "check EarthNode failed" -- no reference input present or several, which is not allowed
 
@@ -169,16 +169,16 @@ getRegistrationReferenceInputs sp@ScriptParams{..} (h:t) =
                                                                                                                                                           | otherwise = []
     checkReferenceInput _                                                                                                                                  = trace "could not match TxIn" []
   in
-    checkReferenceInput h ++ (getRegistrationReferenceInputs sp t)
+    checkReferenceInput h ++ getRegistrationReferenceInputs sp t
 
 
 -- Check if some Datum (BuiltinData) is a EnRegistration Datum
 {-# INLINABLE isRegistrationDatum #-}
 isRegistrationDatum :: ScriptParams -> Value -> BuiltinData -> Bool
-isRegistrationDatum ScriptParams{..} v d = 
-  let 
+isRegistrationDatum ScriptParams{..} v d =
+  let
     getEnRegDat :: EnRegistration -> Bool
-    getEnRegDat  EnRegistration {..} = traceIfFalse "Could not find ENNFT in reference input" $ Value.valueOf v spNftCs enUsedNftTn == 1 
+    getEnRegDat  EnRegistration {..} = traceIfFalse "Could not find ENNFT in reference input" $ Value.valueOf v spNftCs enUsedNftTn == 1
   in
     getEnRegDat $ unsafeFromBuiltinData d
 
