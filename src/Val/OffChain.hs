@@ -2,7 +2,7 @@
   Author   : Torben Poguntke
   Company  : World Mobile Group
   Copyright: 2023
-  Version  : v0.1
+  Version  : v1.0
 -}
 {-# LANGUAGE DataKinds         #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -46,7 +46,3 @@ scriptAsCbor = serialise . script
 
 apiScript :: ScriptParams -> PlutusScript PlutusScriptV2
 apiScript sp = PlutusScriptSerialised $ SBS.toShort $ LB.toStrict $ scriptAsCbor (PlutusTx.toBuiltinData sp)
-
-------------------------------------------------------------
--- Endpoints for Testing
-------------------------------------------------------------

@@ -2,7 +2,7 @@
   Author   : Torben Poguntke
   Company  : World Mobile Group
   Copyright: 2023
-  Version  : v0.1
+  Version  : v1.0
 -}
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE DeriveAnyClass        #-}

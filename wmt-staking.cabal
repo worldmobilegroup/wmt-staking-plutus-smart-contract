@@ -21,7 +21,6 @@ library
   ghc-options: -Wall -Wnoncanonical-monad-instances -Wunused-packages
                  -Wincomplete-uni-patterns -Wincomplete-record-updates
                  -Wredundant-constraints -Widentities
-                 -- See Plutus Tx readme
                  -fobject-code -fno-ignore-interface-pragmas -fno-omit-interface-pragmas
   exposed-modules:     
                     Pol.Types
@@ -30,8 +29,6 @@ library
                     Val.Types
                     Val.OnChain
                     Val.OffChain
-                    --Sim.OffChain
-                    --Sim.Trace
   build-depends:     
                       aeson
                     , base -any

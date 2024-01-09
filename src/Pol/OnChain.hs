@@ -2,7 +2,7 @@
   Author   : Torben Poguntke
   Company  : World Mobile Group
   Copyright: 2023
-  Version  : v0.1
+  Version  : v1.0
 -}
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE DerivingVia           #-}
@@ -103,7 +103,6 @@ validateStaking sp ocs samt tn idx info
 --
 
 -- We ensure that the proof of execution as well as the specified amount of WMT is spent to the wmt staking smart contract
--- Script Parameter -> MintingPolicy Currency Symbol (own) -> TxInfo -> Wmt Staking Script Hash -> Redeemer stake amount -> Bool
 {-# INLINABLE valuePaidToScript #-}
 valuePaidToScript :: ScriptParams -> CurrencySymbol -> TokenName -> TxInfo -> Integer -> Bool
 valuePaidToScript sp@ScriptParams{..} ocs tn info samt =

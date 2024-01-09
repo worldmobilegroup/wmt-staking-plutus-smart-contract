@@ -2,7 +2,7 @@
   Author   : Torben Poguntke
   Company  : World Mobile Group
   Copyright: 2023
-  Version  : v0.1
+  Version  : v1.0
 -}
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE DerivingVia           #-}
@@ -123,12 +123,3 @@ addrToPkh _                                    = error "addrToPkh"
 addrToVh :: Cardano.Api.Shelley.Address ShelleyAddr -> ValidatorHash
 addrToVh (ShelleyAddress _ (ScriptHashObj kh) _) = transScriptHash kh
 addrToVh _                                    = error "addrToVh"
-
--- Preview-Testnet Parameters first version
--- cabal run wmt-staking d8bebcb0abd89193874c59ed3023f5b4f81b89b6676d187ad7fbdb0e 3f1d9bd2f8c3d7d8144b789433261370eaf25cdc83fe8a745ef880c1 tDRASA addr_test1wzffrh2eu39sfrmty89zma353yulrjtnphx533xz8985jpsdfa2t3 addr_test1qz43jnthgl2qk97fvkqwg9affwnfn7v2j8jycn7q6m6d90wp5n9fnvekx7cv5kye9k5xwlrqgylxlu4hdc7d85mhu6yq7760j3 2
--- Smart Contract Generation Output
--- {"plutus_file_policy":"wmt-staking-proof-of-execution_dummy.plutus","currencysymbol":"b090c134738121e6c96dd9eedc3f7a99e6ac9d21985c1b97cba72077","plutus_file_validator":"wmt_staking_dummy.plutus","validator_address":"addr_test1wqkax9glhwhss8e5x3dvfcgy9m3hy26yr6srwxkct0755mgd3xcr6"}
--- PubKeyHash: 167d64052f9408816b9684b964befffb0b2c49132fb6e30097c12e81 
--- Bytes nftcs: d8bebcb0abd89193874c59ed3023f5b4f81b89b6676d187ad7fbdb0e
--- Bytes stcs: 3f1d9bd2f8c3d7d8144b789433261370eaf25cdc83fe8a745ef880c1
--- Der PubKeyHash belongs to my address: addr_test1qqt86eq9972q3qttj6ztje97llasktzfzvhmdccqjlqjaq2cer3t74yn0dm8xqnr7rtwhkqcrpsmphwcf0mlmn39ry6qy6q5t2
